@@ -1,0 +1,146 @@
+kind: Template
+apiVersion: v1
+metadata:
+  name: kafka-cluster-template
+  annotations:
+    openshift.io/display-name: "Kafka Cluster for HDF3.2" 
+    description: >-
+      An kafka cluster demo based on Hortonworks HDF3.2 , see
+      https://hortonworks.com/products/data-platforms/hdf
+
+      NOTE:  Data is persistent , you can use this for production purpose."
+
+    tags: "quickstart,kafka,hdf3.2" 
+    iconClass: "icon-redis"
+    openshift.io/provider-display-name: "Hortonworks, Inc." 
+    openshift.io/documentation-url: "https://github.com/jchen/minishift-kafka-cluster" 
+    openshift.io/support-url: "jchen@hortonworks.com" 
+objects:
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: zkserver
+    labels:
+      app: zkserver
+  spec:
+    ports:
+    - port: 2181
+      name: client-port
+    - port: 2888
+      name: server-port
+    - port: 3888
+      name: leader-port
+    clusterIP: None
+    selector:
+      app: zkserver
+- apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    name: zkserver
+  spec:
+    selector:
+      matchLabels:
+        app: zkserver # has to match .spec.template.metadata.labels
+    serviceName: "zkserver"
+    replicas: ${ZOOKEEPER_INSTANCE_COUNT}
+    template:
+      metadata:
+        labels:
+          app: zkserver # has to match .spec.selector.matchLabels
+      spec:
+        terminationGracePeriodSeconds: 20
+        containers:
+        - name: zkserver
+          image: zookeeper/hdf3.2:v0.1
+          env:
+          - name: ZOOKEEPER_INSTANCE_COUNT
+            value: ${ZOOKEEPER_INSTANCE_COUNT}
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh","-c","echo 'Stopping container...';source /usr/hdf/current/zookeeper-server/conf/zookeeper-env.sh ; env ZOOCFGDIR=/etc/zookeeper/conf /usr/hdf/current/zookeeper-server/bin/zkServer.sh stop"]
+          ports:
+          - containerPort: 2181
+            name: client-port
+          - containerPort: 2888
+            name: server-port
+          - containerPort: 3888
+            name: leader-port    
+          volumeMounts:
+          - name: zookeeper
+            mountPath: /zookeeper
+    volumeClaimTemplates:
+    - metadata:
+        name: zookeeper
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: kafka
+    labels:
+      app: kafka
+  spec:
+    ports:
+    - port: 9092
+      name: client-port
+    clusterIP: None
+    selector:
+      app: kafka
+- apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    name: kafka
+    labels:
+      app: kafka
+  spec:
+    replicas: ${KAFKA_BROKER_COUNT}
+    selector:
+      matchLabels:
+        app: kafka
+    template:
+      metadata:
+        labels:
+          app: kafka
+      spec:
+        containers:
+        - name: kafka
+          image: kafka/hdf3.2:v0.1
+          env:
+          - name: ZOOKEEPER_INSTANCE_COUNT
+            value: ${ZOOKEEPER_INSTANCE_COUNT}
+          - name: KAFKA_BROKER_COUNT
+            value: ${KAFKA_BROKER_COUNT}
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh","-c","source /usr/hdf/current/kafka-broker/config/kafka-env.sh;/usr/hdf/current/kafka-broker/bin/kafka stop"]
+          ports:
+          - containerPort: 9092
+          volumeMounts:
+            - mountPath: /kafka-data
+              name: kafka-data
+    volumeClaimTemplates:
+    - metadata:
+        name: kafka-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+parameters:
+  - name: ZOOKEEPER_INSTANCE_COUNT
+    displayName: "Zookeeper Instance Count:"
+    description: Number of instances for zookeeper
+    value: "3"
+    required: true
+  - name: KAFKA_BROKER_COUNT
+    displayName: "Kafka Instance Count:"
+    description: Number of instances for zookeeper
+    value: "3"
+    required: true
+labels:
+  kafka: hdf3.2

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: kafka
+  labels:
+    app: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+      - name: kafka
+        image: kafka/hdf3.2:v0.1
+        lifecycle:
+          preStop:
+            exec:
+              command: ["sh","-c","source /usr/hdf/current/kafka-broker/config/kafka-env.sh;/usr/hdf/current/kafka-broker/bin/kafka stop"]
+        ports:
+        - containerPort: 9092
+        volumeMounts:
+          - mountPath: /kafka-data
+            name: kafka-data
+  volumeClaimTemplates:
+  - metadata:
+      name: kafka-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
