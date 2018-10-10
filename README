@@ -1,0 +1,11 @@
+It is a containerized kafka cluster using minishift(based on Hortonworks HDF3.2)
+Usage:
+1. build docker images
+  make build
+2. import template to minishift
+  oc apply -f kafka-cluster-template.yaml
+3.open minishift UI, open Catalog page.
+  you will see a template "Kafka cluster for HDF3.2"
+  click->next->next
+  you will see a kafka cluster is created.
+
