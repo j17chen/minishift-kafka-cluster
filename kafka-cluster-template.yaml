@@ -97,10 +97,11 @@ objects:
     labels:
       app: kafka
   spec:
-    replicas: ${KAFKA_BROKER_COUNT}
     selector:
       matchLabels:
         app: kafka
+    serviceName: "kafka"
+    replicas: ${KAFKA_BROKER_COUNT}
     template:
       metadata:
         labels:

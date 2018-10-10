@@ -1,14 +1,29 @@
-apiVersion: apps/v1
-kind: ReplicaSet
+apiVersion: v1
+kind: Service
 metadata:
   name: kafka
   labels:
     app: kafka
 spec:
-  replicas: 1
+  ports:
+  - port: 9092
+    name: client-port
+  clusterIP: None
+  selector:
+    app: kafka
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  labels:
+    app: kafka
+spec:
   selector:
     matchLabels:
       app: kafka
+  serviceName: "kafka"
+  replicas: 3
   template:
     metadata:
       labels:
