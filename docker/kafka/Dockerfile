@@ -22,6 +22,8 @@ RUN chmod +x /etc/kafka/conf/preinit.sh
 RUN chgrp -R 0 /var/run/kafka && chmod -R g=u /var/run/kafka
 RUN chgrp -R 0 /var/log/kafka && chmod -R g=u /var/log/kafka
 RUN chgrp -R 0 /kafka-data && chmod -R g=u /kafka-data
+RUN chgrp -R 0 /etc/kafka/conf && chmod -R g=u /etc/kafka/conf
+
 LABEL io.openshift.tags   poc_cluster,kafka,hdf
 
 EXPOSE 9092
